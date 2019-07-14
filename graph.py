@@ -1,3 +1,4 @@
+import math
 from queue import PriorityQueue
 from unionfind import UnionFind
 
@@ -130,10 +131,6 @@ class Graph:
 
         return visited
 
-    def enqueue_edges(self, vertex, queue):
-        for edge in vertex.edges:
-            queue.put(edge)
-
     def kruskal(self):
         queue = PriorityQueue()
         mst = list()
@@ -153,6 +150,10 @@ class Graph:
 
         return mst, mst_weight
 
+    def prim_helper(self, vertex, queue):
+        for edge in vertex.edges:
+            queue.put(edge)
+
     def prim(self, origin):
         queue = PriorityQueue()
         visited = list()
@@ -160,7 +161,7 @@ class Graph:
         mst_weight = 0
 
         visited.append(origin)
-        self.enqueue_edges(self.vertexes[origin], queue)
+        self.prim_helper(self.vertexes[origin], queue)
 
         while not queue.empty() and len(mst) < self.size:
             current_edge = queue.get()
@@ -171,9 +172,59 @@ class Graph:
             mst.append(current_edge)
             mst_weight += current_edge.weight
 
-            self.enqueue_edges(self.vertexes[current_edge.dest], queue)
+            self.prim_helper(self.vertexes[current_edge.dest], queue)
 
         return mst, mst_weight
+
+    def shortest_path(self, origin, dest):
+        vertex_data = dict()
+
+        for vertex in self.vertexes:
+            vertex_data[vertex] = (math.inf, '')
+
+        if not self.djikstra(origin, dest, vertex_data):
+            return 0, 'No hay camino'
+
+        path = list()
+        aux = dest
+
+        while aux != origin:
+            path.append(aux)
+            aux = vertex_data[aux][1]
+
+        path.append(origin)
+        path.reverse()
+
+        return path, vertex_data[dest][0]
+
+    def djikstra_helper(self, current_vertex, visited, vertex_data, queue):
+        for edge in self.vertexes[current_vertex].edges:
+            if edge.dest not in visited:
+                aux = vertex_data[current_vertex][0] + edge.weight
+
+                if aux < vertex_data[edge.dest][0]:
+                    vertex_data[edge.dest] = (aux, current_vertex)
+                    queue.put(edge)
+
+    def djikstra(self, origin, dest, vertex_data):
+        queue = PriorityQueue()
+        visited = list()
+
+        current_vertex = origin
+        vertex_data[origin] = (0, origin)
+        visited.append(origin)
+        self.djikstra_helper(current_vertex, visited, vertex_data, queue)
+
+        while not queue.empty():
+            current_vertex = queue.get().dest
+
+            if current_vertex == dest:
+                return True
+
+            visited.append(current_vertex)
+            self.djikstra_helper(current_vertex, visited, vertex_data, queue)
+
+        return False
 
     def __repr__(self):
         return self.__str__()

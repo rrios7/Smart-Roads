@@ -27,3 +27,7 @@ print(f'El arbol de expansion minimo de Kruskal es {tree} y su costo es {cost}')
 tree2, cost2 = g.prim('A')
 
 print(f'El arbol de expansion minimo de Prim es {tree2} y su costo es {cost2}')
+
+path, cost = g.shortest_path('A', 'D')
+
+print(f'El camino mas corto entre el par de vertices cuesta {cost} y se compone de {path}')
