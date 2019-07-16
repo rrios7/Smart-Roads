@@ -8,21 +8,30 @@ class Edge:
         self.origin = origin
         self.dest = dest
         self.weight = weight
+        self.heuristic = 0
 
     def __lt__(self, other):
-        return self.weight < other.weight
+        if self.heuristic == 0:
+            return self.weight < other.weight
+
+        return self.heuristic < other.heuristic
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return f'{self.origin} -> {self.dest} : {self.weight}'
+        return f'{self.origin} -> {self.dest} : {self.weight} : {self.heuristic}'
 
 
 class Vertex:
-    def __init__(self, index):
+    def __init__(self, index, x, y):
         self.index = index
+        self.x_coord = x
+        self.y_coord = y
         self.edges = list()
+
+    def __sub__(self, other):
+        return (self.x_coord - other.x_coord) ** 2 + (self.y_coord - other.y_coord) ** 2
 
 
 class Graph:
@@ -34,11 +43,11 @@ class Graph:
     def empty(self):
         return self.size == 0
 
-    def add_vertex(self, label):
+    def add_vertex(self, label, x=None, y=None):
         if label in self.vertexes:
             return
 
-        self.vertexes[label] = Vertex(self.size)
+        self.vertexes[label] = Vertex(self.size, x, y)
         self.size += 1
 
     def remove_vertex(self, label):
@@ -176,13 +185,13 @@ class Graph:
 
         return mst, mst_weight
 
-    def shortest_path(self, origin, dest):
+    def shortest_path(self, origin, dest, algorithm):
         vertex_data = dict()
 
         for vertex in self.vertexes:
             vertex_data[vertex] = (math.inf, '')
 
-        if not self.djikstra(origin, dest, vertex_data):
+        if not algorithm(origin, dest, vertex_data):
             return 0, 'No hay camino'
 
         path = list()
@@ -197,13 +206,17 @@ class Graph:
 
         return path, vertex_data[dest][0]
 
-    def djikstra_helper(self, current_vertex, visited, vertex_data, queue):
+    def enqueue_edges(self, current_vertex, visited, vertex_data, queue, dest=None):
         for edge in self.vertexes[current_vertex].edges:
             if edge.dest not in visited:
                 aux = vertex_data[current_vertex][0] + edge.weight
 
                 if aux < vertex_data[edge.dest][0]:
                     vertex_data[edge.dest] = (aux, current_vertex)
+
+                    if dest is not None:
+                        edge.heuristic = self.heuristic(aux, edge.dest, dest)
+
                     queue.put(edge)
 
     def djikstra(self, origin, dest, vertex_data):
@@ -213,18 +226,49 @@ class Graph:
         current_vertex = origin
         vertex_data[origin] = (0, origin)
         visited.append(origin)
-        self.djikstra_helper(current_vertex, visited, vertex_data, queue)
+        self.enqueue_edges(current_vertex, visited, vertex_data, queue)
 
         while not queue.empty():
             current_vertex = queue.get().dest
-
             if current_vertex == dest:
                 return True
 
             visited.append(current_vertex)
-            self.djikstra_helper(current_vertex, visited, vertex_data, queue)
+            self.enqueue_edges(current_vertex, visited, vertex_data, queue)
 
         return False
+
+    def heuristic(self, weight, current_vertex, dest):
+        return weight + math.sqrt(self.vertexes[current_vertex] - self.vertexes[dest])
+
+    def a_star(self, origin, dest, vertex_data):
+        found_path = False
+        queue = PriorityQueue()
+        visited = list()
+
+        current_vertex = origin
+        vertex_data[origin] = (0, origin)
+        visited.append(origin)
+        self.enqueue_edges(current_vertex, visited, vertex_data, queue, dest)
+
+        while not queue.empty():
+            current_edge = queue.get()
+
+            current_edge.heuristic = 0
+
+            if found_path:
+                continue
+
+            current_vertex = current_edge.dest
+
+            if current_vertex == dest:
+                found_path = True
+
+            visited.append(current_vertex)
+
+            self.enqueue_edges(current_vertex, visited, vertex_data, queue, dest)
+
+        return found_path
 
     def __repr__(self):
         return self.__str__()
