@@ -3,12 +3,24 @@ from queue import PriorityQueue
 from unionfind import UnionFind
 
 
+
 class Edge:
-    def __init__(self, origin, dest, weight):
+    def __init__(self, origin, dest, distance, speed, capacity):
         self.origin = origin
         self.dest = dest
-        self.weight = weight
-        self.heuristic = 0
+        self.distance = distance
+        self.heuristic = 0 
+        self.speed = speed
+        self.time = (self.distance / speed) * 60
+        self.weight = self.time
+        self.capacity = capacity
+        self.current_flow = 0
+    
+    def update(self, value):
+        self.current_flow += value
+
+        if self.current_flow > self.capacity:
+            self.weight = (self.time + ((self.current_flow - self.capacity) / self.capacity)) * (self.time)
 
     def __lt__(self, other):
         if self.heuristic == 0:
@@ -21,14 +33,15 @@ class Edge:
 
     def __str__(self):
         return f'{self.origin} -> {self.dest} : {self.weight} : {self.heuristic}'
-
-
+    
 class Vertex:
     def __init__(self, index, x, y):
         self.index = index
         self.x_coord = x
         self.y_coord = y
         self.edges = list()
+        self.map = dict()
+        
 
     def __sub__(self, other):
         return (self.x_coord - other.x_coord) ** 2 + (self.y_coord - other.y_coord) ** 2
@@ -39,16 +52,21 @@ class Graph:
         self.vertexes = dict()
         self.size = 0
         self.edges = list()
+        self.important_vertexes = list()
+        
 
     def empty(self):
         return self.size == 0
 
-    def add_vertex(self, label, x=None, y=None):
+    def add_vertex(self, label, x=None, y=None, important=False):
         if label in self.vertexes:
             return
 
         self.vertexes[label] = Vertex(self.size, x, y)
         self.size += 1
+        
+        if important:
+            self.important_vertexes.append(label)
 
     def remove_vertex(self, label):
         if label not in self.vertexes:
@@ -70,16 +88,18 @@ class Graph:
         self.vertexes.pop(label)
         self.size -= 1
 
-    def add_edge(self, origin, dest, weight=1, directed=False):
+    def add_edge(self, origin, dest, speed, capacity, directed=False):
         if origin not in self.vertexes and dest not in self.vertexes:
             return
 
-        self.vertexes[origin].edges.append(Edge(origin, dest, weight))
+        distance =  math.sqrt(self.vertexes[origin] - self.vertexes[dest])
 
+        self.vertexes[origin].edges.append(Edge(origin, dest, distance, speed, capacity))
+        
         if not directed:
-            self.vertexes[dest].edges.append(Edge(dest, origin, weight))
+            self.vertexes[dest].edges.append(Edge(dest, origin, distance, speed, capacity))
 
-        self.edges.append(Edge(origin, dest, weight))
+        self.edges.append(Edge(origin, dest, distance, speed, capacity))
 
     def remove_edge(self, origin, dest, directed=False):
         if origin not in self.vertexes and dest not in self.vertexes:
@@ -269,6 +289,16 @@ class Graph:
             self.enqueue_edges(current_vertex, visited, vertex_data, queue, dest)
 
         return found_path
+    
+    def all_pairs_shortest_path(self):
+        for label, vertex in self.vertexes.items():
+            for important_vertex in self.important_vertexes:
+                
+                if label == important_vertex:
+                    continue
+                    
+                vertex.map[important_vertex] = (self.shortest_path(label, important_vertex, self.a_star))
+                
 
     def __repr__(self):
         return self.__str__()
