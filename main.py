@@ -1,8 +1,5 @@
 from graph import Graph
 
-
-
-# A-Star Code :D!
 g = Graph()
 
 g.add_vertex('A', 2, 10)

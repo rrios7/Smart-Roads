@@ -3,7 +3,6 @@ from queue import PriorityQueue
 from unionfind import UnionFind
 
 
-
 class Edge:
     def __init__(self, origin, dest, distance, speed, capacity):
         self.origin = origin
@@ -20,7 +19,9 @@ class Edge:
         self.current_flow += value
 
         if self.current_flow > self.capacity:
-            self.weight = (self.time + ((self.current_flow - self.capacity) / self.capacity)) * (self.time)
+            self.weight = (self.time + ((self.current_flow - self.capacity) / self.capacity)) * self.time
+        else:
+            self.weight = self.time
 
     def __lt__(self, other):
         if self.heuristic == 0:
@@ -33,7 +34,8 @@ class Edge:
 
     def __str__(self):
         return f'{self.origin} -> {self.dest} : {self.weight} : {self.heuristic}'
-    
+
+
 class Vertex:
     def __init__(self, index, x, y):
         self.index = index
@@ -41,7 +43,6 @@ class Vertex:
         self.y_coord = y
         self.edges = list()
         self.map = dict()
-        
 
     def __sub__(self, other):
         return (self.x_coord - other.x_coord) ** 2 + (self.y_coord - other.y_coord) ** 2
@@ -53,7 +54,6 @@ class Graph:
         self.size = 0
         self.edges = list()
         self.important_vertexes = list()
-        
 
     def empty(self):
         return self.size == 0
@@ -298,7 +298,6 @@ class Graph:
                     continue
                     
                 vertex.map[important_vertex] = (self.shortest_path(label, important_vertex, self.a_star))
-                
 
     def __repr__(self):
         return self.__str__()
